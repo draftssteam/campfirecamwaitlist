@@ -210,11 +210,39 @@ h1.hero-headline .line:nth-child(3) {
 
 .hero-actions {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 12px;
-  justify-content: center;
-  flex-wrap: wrap;
   opacity: 0;
   animation: fadeUp 0.9s ease 1.5s forwards;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* Hero inline email form */
+.hero-form {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.hero-email-input {
+  flex: 1;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  background: var(--cream);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.hero-email-input::placeholder { color: var(--border); }
+.hero-email-input:focus {
+  border-color: var(--sienna);
+  box-shadow: 0 0 0 3px rgba(160,82,45,0.08);
 }
 
 .btn-primary {
@@ -222,22 +250,52 @@ h1.hero-headline .line:nth-child(3) {
   font-size: 14px; font-weight: 500;
   background: var(--ink); color: var(--cream);
   border: none; border-radius: 8px;
-  padding: 14px 28px;
+  padding: 14px 24px;
   cursor: pointer; text-decoration: none;
+  white-space: nowrap;
   transition: background 0.2s, transform 0.15s;
 }
 .btn-primary:hover { background: #333330; transform: translateY(-2px); }
 
-.btn-ghost {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px; font-weight: 400;
-  background: transparent; color: var(--muted);
-  border: 0.5px solid var(--border); border-radius: 8px;
-  padding: 14px 28px;
-  cursor: pointer; text-decoration: none;
-  transition: border-color 0.2s, color 0.2s, transform 0.15s;
+.hero-form-error {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: #e07a5f;
+  display: none;
+  text-align: left;
+  width: 100%;
+  padding-left: 2px;
 }
-.btn-ghost:hover { border-color: var(--muted); color: var(--ink); transform: translateY(-2px); }
+
+.hero-success {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  background: rgba(160,82,45,0.07);
+  border: 0.5px solid rgba(160,82,45,0.2);
+  border-radius: 8px;
+  padding: 12px 18px;
+  width: 100%;
+}
+.hero-success-icon {
+  font-size: 16px; color: var(--sienna); flex-shrink: 0;
+}
+.hero-success p {
+  font-size: 13px; color: var(--sienna);
+  font-weight: 400; text-align: left; line-height: 1.5;
+}
+
+.hero-scroll-link {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--border);
+  text-decoration: none;
+  transition: color 0.2s;
+  margin-top: 4px;
+}
+.hero-scroll-link:hover { color: var(--muted); }
 
 .scroll-hint {
   position: absolute;
@@ -749,6 +807,9 @@ footer {
   .story-visual { transform: none; }
   .waitlist-section { padding: 80px 20px; }
   .form-row { flex-direction: column; }
+  .hero-form { flex-direction: column; }
+  .hero-email-input { width: 100%; }
+  .btn-primary { width: 100%; text-align: center; padding: 14px; }
   footer { flex-direction: column; align-items: flex-start; padding: 32px 20px; }
 }
 @media (max-width: 480px) {
@@ -796,8 +857,31 @@ footer {
     </p>
 
     <div class="hero-actions">
-      <a href="#waitlist" class="btn-primary">Join the Waitlist</a>
-      <a href="#reels" class="btn-ghost">See the moments ↓</a>
+
+      <!-- Inline email form -->
+      <div class="hero-form" id="hero-form-row">
+        <input
+          type="email"
+          class="hero-email-input"
+          id="hero-email-input"
+          placeholder="your@email.com"
+          autocomplete="email"
+        >
+        <button class="btn-primary" onclick="handleHeroSubmit()">I'm In</button>
+      </div>
+
+      <!-- Error -->
+      <p class="hero-form-error" id="hero-form-error">Please enter a valid email address.</p>
+
+      <!-- Success (replaces form) -->
+      <div class="hero-success" id="hero-success">
+        <span class="hero-success-icon">✓</span>
+        <p>You're on the list. We'll email you when Drop 02 is ready.</p>
+      </div>
+
+      <!-- Soft scroll link -->
+      <a href="#reels" class="hero-scroll-link">See the moments ↓</a>
+
     </div>
   </div>
 
@@ -1123,7 +1207,48 @@ footer {
     reelStrip.scrollLeft = scrollLeft - (x - startX);
   });
 
-  /* ── Waitlist form ── */
+  /* ── Hero inline form ── */
+  function handleHeroSubmit() {
+    const input   = document.getElementById('hero-email-input');
+    const errEl   = document.getElementById('hero-form-error');
+    const formRow = document.getElementById('hero-form-row');
+    const success = document.getElementById('hero-success');
+    const email   = input.value.trim();
+    const valid   = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    if (!valid) {
+      errEl.style.display = 'block';
+      input.style.borderColor = 'rgba(224,122,95,0.5)';
+      return;
+    }
+    errEl.style.display = 'none';
+
+    // ─── SWAP: replace with your Mailchimp / Klaviyo POST URL ───
+    // fetch('YOUR_MAILCHIMP_FORM_ACTION_URL', {
+    //   method: 'POST',
+    //   body: new URLSearchParams({ EMAIL: email })
+    // });
+
+    // Also pre-fill the waitlist form below so it feels seamless
+    const wlInput = document.getElementById('email-input');
+    if (wlInput) wlInput.value = email;
+
+    formRow.style.display = 'none';
+    success.style.display = 'flex';
+    success.style.animation = 'fadeUp 0.6s ease forwards';
+
+    // Also hide the waitlist section form since they already signed up
+    const wlFormState = document.getElementById('form-state');
+    const wlSuccess   = document.getElementById('success-state');
+    if (wlFormState) wlFormState.style.display = 'none';
+    if (wlSuccess)   { wlSuccess.style.display = 'block'; }
+  }
+
+  document.getElementById('hero-email-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleHeroSubmit();
+  });
+
+
   function handleSubmit() {
     const input = document.getElementById('email-input');
     const errEl = document.getElementById('form-error');
